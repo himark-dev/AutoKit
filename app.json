@@ -2,6 +2,11 @@
   "expo": {
     "name": "autokit",
     "slug": "autokit",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "scheme": "autokit"
   }
 }

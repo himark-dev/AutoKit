@@ -3,3 +3,11 @@
 @import "tailwindcss/utilities.css";
  
 @import "nativewind/theme";
+
+@theme {
+  --font-google: GoogleSans-Regular;
+  --font-google-bold: GoogleSans-Bold;
+  --color-google-bg: #131314;
+  --color-google-card: #1e1f20;
+  --color-google-blue: #8ab4f8;
+}
