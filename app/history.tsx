@@ -117,6 +117,13 @@ export default function History() {
   useEffect(() => {
     loadHistory();
   }, []);
+import { View, Text, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
+
+export default function History() {
+  const router = useRouter();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
@@ -145,6 +152,9 @@ export default function History() {
             )}
           </ScrollView>
         )}
+        <Text className="text-gray-400 font-google text-base">
+          History screen coming soon...
+        </Text>
       </View>
     </SafeAreaView>
   );
