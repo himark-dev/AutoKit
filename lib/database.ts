@@ -18,7 +18,6 @@ export interface WorkflowRun {
 
 const WORKFLOWS_KEY = 'workflows';
 const HISTORY_KEY = 'workflow_history';
-const WORKFLOWS_KEY = 'workflows';
 
 export class WorkflowDB {
   // Получить все workflows
@@ -272,7 +271,6 @@ export class WorkflowDB {
     }
   }
 }
-
 export class HistoryDB {
   // Получить всю историю
   static async getAll(): Promise<WorkflowRun[]> {
