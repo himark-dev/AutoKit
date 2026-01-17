@@ -1,10 +1,34 @@
-// app/workflows.tsx
+// app/workflows/index.tsx
 import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Play, Clock, Pause, Plus, Trash2 } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { WorkflowDB, Workflow, HistoryDB } from "@/lib/database";
+
+// Шаблон для нового workflow
+const DEFAULT_WORKFLOW_TEMPLATE = {
+  title: "New Workflow",
+  description: "Custom workflow description",
+  lastRun: "Never",
+  nodeCount: 3,
+  graph: {
+    nodes: [
+      { id: "1", type: "start", label: "Start", x: 100, y: 200 },
+      { id: "2", type: "process", label: "Process", x: 300, y: 200 },
+      { id: "3", type: "end", label: "End", x: 500, y: 200 }
+    ],
+    links: [
+      { source: "1", target: "2" },
+      { source: "2", target: "3" }
+    ],
+    coords: {
+      "1": { x: 100, y: 200 },
+      "2": { x: 300, y: 200 },
+      "3": { x: 500, y: 200 }
+    }
+  }
+};
 
 interface WorkflowCardProps {
   workflow: Workflow;
@@ -119,6 +143,46 @@ export default function Workflows() {
     }
   };
 
+  // ФУНКЦИЯ ДОБАВЛЕНИЯ НОВОГО WORKFLOW
+  const addWorkflow = async () => {
+    try {
+      const newWorkflowData = { ...DEFAULT_WORKFLOW_TEMPLATE };
+      newWorkflowData.title = `New Workflow ${workflows.length + 1}`;
+      
+      const id = await WorkflowDB.add(newWorkflowData);
+      
+      // Обновляем список без перезагрузки всего
+      const newWorkflow: Workflow = {
+        id,
+        name: newWorkflowData.title,
+        json: JSON.stringify(newWorkflowData),
+        status: 'ENABLED',
+        data: newWorkflowData
+      };
+      
+      setWorkflows([newWorkflow, ...workflows]);
+      
+      Alert.alert(
+        "Success", 
+        `Workflow "${newWorkflowData.title}" created successfully!`,
+        [
+          { 
+            text: "Edit", 
+            onPress: () => router.push(`/workflows/${id}`) 
+          },
+          { 
+            text: "OK", 
+            style: "default" 
+          }
+        ]
+      );
+      
+    } catch (error: any) {
+      console.error('Error adding workflow:', error);
+      Alert.alert("Error", error.message || "Failed to create workflow");
+    }
+  };
+
   // Запуск workflow и добавление записи в history
   const handlePlayWorkflow = async (workflow: Workflow) => {
     try {
@@ -129,10 +193,10 @@ export default function Workflows() {
         `Starting workflow: ${workflow.name}\nTimestamp: ${new Date().toISOString()}`
       );
 
-      // Имитация выполнения workflow (замените на реальную логику)
+      // Имитация выполнения workflow
       setTimeout(async () => {
         try {
-          const success = Math.random() > 0.3; // 70% успеха для демо
+          const success = Math.random() > 0.3;
           const status = success ? 'SUCCESS' : 'ERROR';
           const log = success 
             ? `Workflow ${workflow.name} completed successfully\nExecution time: 2.5s\nResults: Processed 3 nodes`
@@ -165,7 +229,9 @@ export default function Workflows() {
       // Затем удаляем сам workflow
       await WorkflowDB.delete(id);
       
-      await loadWorkflows(); // Перезагружаем список
+      // Обновляем список
+      setWorkflows(workflows.filter(w => w.id !== id));
+      
       Alert.alert("Success", "Workflow deleted successfully");
     } catch (error) {
       console.error('Error deleting workflow:', error);
@@ -190,7 +256,7 @@ export default function Workflows() {
           
           <TouchableOpacity 
             className="w-10 h-10 bg-green-500/20 rounded-xl items-center justify-center"
-            onPress={() => router.push('/workflows/new')}
+            onPress={addWorkflow}
           >
             <Plus color="#22c55e" size={20} />
           </TouchableOpacity>
@@ -216,7 +282,7 @@ export default function Workflows() {
                 <Text className="text-gray-400 font-google text-base mb-4">No workflows found</Text>
                 <TouchableOpacity 
                   className="bg-blue-500/20 px-6 py-3 rounded-xl"
-                  onPress={() => router.push('/workflows/new')}
+                  onPress={addWorkflow}
                 >
                   <Text className="text-blue-400 font-google text-base">Create First Workflow</Text>
                 </TouchableOpacity>
