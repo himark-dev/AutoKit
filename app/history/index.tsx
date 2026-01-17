@@ -1,49 +1,63 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
+// app/history.tsx
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Clock, CheckCircle, XCircle, FileText, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Clock, CheckCircle, XCircle, FileText, Trash2, Play } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { HistoryDB, WorkflowRun } from "@/lib/database";
 
 interface HistoryCardProps {
   run: WorkflowRun;
   onDelete: (id: string) => void;
+  onRunAgain: (workflowId: string) => void;
 }
 
-const HistoryCard = ({ run, onDelete }: HistoryCardProps) => {
-  const formatDuration = (seconds: number) => {
+const HistoryCard = ({ run, onDelete, onRunAgain }: HistoryCardProps) => {
+  const formatDuration = () => {
+    if (run.end === 0) return "Running...";
+    
+    const seconds = Math.floor((run.end - run.start) / 1000);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Succeeded': return '#22c55e';
-      case 'Error': return '#ef4444';
-      case 'Running': return '#3b82f6';
+      case 'SUCCESS': return '#22c55e';
+      case 'ERROR': return '#ef4444';
+      case 'RUNNING': return '#3b82f6';
       default: return '#6b7280';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Succeeded': return <CheckCircle color="#22c55e" size={16} />;
-      case 'Error': return <XCircle color="#ef4444" size={16} />;
-      case 'Running': return <Clock color="#3b82f6" size={16} />;
+      case 'SUCCESS': return <CheckCircle color="#22c55e" size={16} />;
+      case 'ERROR': return <XCircle color="#ef4444" size={16} />;
+      case 'RUNNING': return <Clock color="#3b82f6" size={16} />;
       default: return <Clock color="#6b7280" size={16} />;
     }
+  };
+
+  const showLog = () => {
+    Alert.alert(
+      `Log - ${run.workflowName || 'Workflow'}`,
+      run.log,
+      [{ text: "Close" }],
+      { userInterfaceStyle: 'dark' }
+    );
   };
 
   const handleDelete = () => {
     Alert.alert(
       "Delete History Record",
-      `Are you sure you want to delete this history record?`,
+      "Are you sure you want to delete this history record?",
       [
         { text: "Cancel", style: "cancel" },
         { text: "Delete", style: "destructive", onPress: () => onDelete(run.id) }
@@ -51,25 +65,14 @@ const HistoryCard = ({ run, onDelete }: HistoryCardProps) => {
     );
   };
 
-  const showLog = () => {
-    Alert.alert(
-      `Log - ${run.workflowName}`,
-      run.log.join('\n'),
-      [{ text: "Close" }],
-      { userInterfaceStyle: 'dark' }
-    );
-  };
-
   return (
-    <TouchableOpacity 
-      activeOpacity={0.7}
-      onPress={showLog}
-      className="bg-google-card mb-4 p-4 rounded-2xl"
-    >
+    <View className="bg-google-card mb-4 p-4 rounded-2xl">
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-1">
-          <Text className="text-white font-google text-lg mb-1">{run.workflowName}</Text>
-          <Text className="text-gray-400 font-google text-sm">Run ID: {run.id}</Text>
+          <Text className="text-white font-google text-lg mb-1">
+            {run.workflowName || `Workflow ${run.workflowId.slice(0, 8)}`}
+          </Text>
+          <Text className="text-gray-400 font-google text-sm">Run ID: {run.id.slice(0, 8)}...</Text>
         </View>
         
         <View className="flex-row items-center">
@@ -87,23 +90,35 @@ const HistoryCard = ({ run, onDelete }: HistoryCardProps) => {
         <View className="flex-row items-center">
           <Clock color="#6b7280" size={14} />
           <Text className="text-gray-500 font-google text-xs ml-1">
-            {formatDate(run.startTime)}
+            {formatDate(run.start)}
           </Text>
         </View>
         
         <Text className="text-gray-500 font-google text-xs">
-          Duration: {formatDuration(run.duration)}
+          Duration: {formatDuration()}
         </Text>
       </View>
       
       <View className="flex-row justify-between items-center">
-        <TouchableOpacity 
-          className="flex-row items-center bg-blue-500/20 px-3 py-2 rounded-xl"
-          onPress={showLog}
-        >
-          <FileText color="#8ab4f8" size={14} />
-          <Text className="text-blue-400 font-google text-xs ml-1">View Log</Text>
-        </TouchableOpacity>
+        <View className="flex-row">
+          <TouchableOpacity 
+            className="flex-row items-center bg-blue-500/20 px-3 py-2 rounded-xl mr-2"
+            onPress={showLog}
+          >
+            <FileText color="#8ab4f8" size={14} />
+            <Text className="text-blue-400 font-google text-xs ml-1">View Log</Text>
+          </TouchableOpacity>
+          
+          {run.status !== 'RUNNING' && (
+            <TouchableOpacity 
+              className="flex-row items-center bg-green-500/20 px-3 py-2 rounded-xl"
+              onPress={() => onRunAgain(run.workflowId)}
+            >
+              <Play color="#22c55e" size={14} />
+              <Text className="text-green-400 font-google text-xs ml-1">Run Again</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         
         <TouchableOpacity 
           className="w-10 h-10 bg-red-500/20 rounded-xl items-center justify-center"
@@ -112,7 +127,7 @@ const HistoryCard = ({ run, onDelete }: HistoryCardProps) => {
           <Trash2 color="#ef4444" size={16} />
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -121,13 +136,13 @@ export default function History() {
   const [historyRuns, setHistoryRuns] = useState<WorkflowRun[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Загрузка history из БД
   const loadHistory = async () => {
     try {
       setLoading(true);
-      await HistoryDB.forceInit(); // Принудительное обновление данных
       const data = await HistoryDB.getAll();
-      setHistoryRuns(data);
+      // Сортируем по времени (новые сверху)
+      const sortedData = data.sort((a, b) => b.start - a.start);
+      setHistoryRuns(sortedData);
     } catch (error) {
       console.error('Error loading history:', error);
       Alert.alert("Error", "Failed to load history");
@@ -136,43 +151,34 @@ export default function History() {
     }
   };
 
-  // Добавление тестовой записи history
-  const addTestHistory = async () => {
-    try {
-      const newHistoryRecord = {
-        workflowName: `Test Workflow ${historyRuns.length + 1}`,
-        status: Math.random() > 0.5 ? 'Succeeded' : 'Error',
-        startTime: new Date().toISOString(),
-        duration: Math.floor(Math.random() * 300), // до 5 минут
-        log: [
-          `Starting workflow execution...`,
-          `Processing step 1...`,
-          `Processing step 2...`,
-          `Workflow ${Math.random() > 0.5 ? 'completed successfully' : 'failed with error'}`
-        ]
-      };
-      
-      await HistoryDB.add(newHistoryRecord);
-      await loadHistory(); // Перезагружаем список
-    } catch (error) {
-      console.error('Error adding history record:', error);
-      Alert.alert("Error", "Failed to add history record");
-    }
-  };
-
-  // Удаление записи history
   const deleteHistoryRecord = async (id: string) => {
     try {
       await HistoryDB.delete(id);
-      await loadHistory(); // Перезагружаем список
+      await loadHistory();
+      Alert.alert("Success", "History record deleted");
     } catch (error) {
       console.error('Error deleting history record:', error);
       Alert.alert("Error", "Failed to delete history record");
     }
   };
 
-  // Очистка всей истории
+  const runWorkflowAgain = async (workflowId: string) => {
+    try {
+      // Здесь можно добавить логику для повторного запуска workflow
+      // Пока просто показываем сообщение
+      Alert.alert(
+        "Info", 
+        "This would re-run the workflow. In a real app, this would execute the workflow again.",
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error('Error running workflow again:', error);
+    }
+  };
+
   const clearAllHistory = () => {
+    if (historyRuns.length === 0) return;
+    
     Alert.alert(
       "Clear All History",
       "Are you sure you want to delete all history records?",
@@ -185,6 +191,7 @@ export default function History() {
             try {
               await HistoryDB.clearAll();
               await loadHistory();
+              Alert.alert("Success", "All history cleared");
             } catch (error) {
               console.error('Error clearing history:', error);
               Alert.alert("Error", "Failed to clear history");
@@ -197,6 +204,13 @@ export default function History() {
 
   useEffect(() => {
     loadHistory();
+    
+    // Обновляем каждые 5 секунд для отображения изменений в реальном времени
+    const interval = setInterval(() => {
+      loadHistory();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -210,28 +224,20 @@ export default function History() {
             <Text className="text-white font-google text-xl">History</Text>
           </View>
           
-          <View className="flex-row">
+          {historyRuns.length > 0 && (
             <TouchableOpacity 
-              className="w-10 h-10 bg-green-500/20 rounded-xl items-center justify-center mr-2"
-              onPress={addTestHistory}
+              className="w-10 h-10 bg-red-500/20 rounded-xl items-center justify-center"
+              onPress={clearAllHistory}
             >
-              <FileText color="#22c55e" size={20} />
+              <Trash2 color="#ef4444" size={20} />
             </TouchableOpacity>
-            
-            {historyRuns.length > 0 && (
-              <TouchableOpacity 
-                className="w-10 h-10 bg-red-500/20 rounded-xl items-center justify-center"
-                onPress={clearAllHistory}
-              >
-                <Trash2 color="#ef4444" size={20} />
-              </TouchableOpacity>
-            )}
-          </View>
+          )}
         </View>
         
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-gray-400 font-google text-base">Loading history...</Text>
+            <ActivityIndicator size="large" color="#8ab4f8" />
+            <Text className="text-gray-400 font-google text-base mt-4">Loading history...</Text>
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
@@ -240,18 +246,17 @@ export default function History() {
                 key={run.id}
                 run={run}
                 onDelete={deleteHistoryRecord}
+                onRunAgain={runWorkflowAgain}
               />
             ))}
             
             {historyRuns.length === 0 && (
               <View className="flex-1 items-center justify-center mt-20">
-                <Text className="text-gray-400 font-google text-base mb-4">No history records found</Text>
-                <TouchableOpacity 
-                  className="bg-blue-500/20 px-6 py-3 rounded-xl"
-                  onPress={addTestHistory}
-                >
-                  <Text className="text-blue-400 font-google text-base">Add Test History</Text>
-                </TouchableOpacity>
+                <FileText color="#6b7280" size={48} />
+                <Text className="text-gray-400 font-google text-base mt-4 mb-2">No history records yet</Text>
+                <Text className="text-gray-500 font-google text-sm text-center px-8">
+                  Run a workflow from the Workflows tab to see execution history here.
+                </Text>
               </View>
             )}
           </ScrollView>
