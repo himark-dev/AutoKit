@@ -23,17 +23,43 @@ import {MINIMAP_SIZE, WORLD_SIZE, MIN_SCALE, MAX_SCALE, EDGE_MARGIN, EPSILON_POR
 
 const { GraphEngine } = NativeModules;
 
-export default function GraphApp() {
+type GraphAppProps = {
+  nodes: any[];
+  setNodes: (nodes: any[]) => void;
+  links: any[];
+  setLinks: (links: any[]) => void;
+  nodesStore: any; // shared value, где хранятся координаты
+  onSave: () => void;
+  onRun: () => void;
+  onDelete: () => void;
+  saving: boolean;
+};
+
+export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore, onSave, onRun, onDelete, saving }: GraphAppProps) {
   const MINIMAP_RATIO = MINIMAP_SIZE / WORLD_SIZE;
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  const [nodes, setNodes] = useState([]);
-  const [links, setLinks] = useState([]);
   const [activeMenu, setActiveMenu] = useState(null);
   const [activeNodeIdJS, setActiveNodeIdJS] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const nodesStore = useSharedValue({});
+  useEffect(() => {
+    nodes.forEach(n => {
+      if (!nodesStore.value[n.id]) {
+        nodesStore.value[n.id] = {
+          x: { value: n.x ?? 0 },
+          y: { value: n.y ?? 0 },
+          width: n.width ?? 100,
+          height: n.height ?? 50,
+          type: n.type,
+          graphId: n.graphId,
+          inputPorts: n.inputPorts ?? [],
+          outputPorts: n.outputPorts ?? [],
+        };
+      }
+    });
+  }, [nodes]);
+
   const activeNodeId = useSharedValue(null);
   const isConnecting = useSharedValue(false);
   const tempLine = useSharedValue({ x1: 0, y1: 0, x2: 0, y2: 0 });
@@ -603,6 +629,12 @@ export default function GraphApp() {
             onAction={handleMenuAction}
           />
         )}
+
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 12 }}>
+          <TouchableOpacity onPress={onRun}><Text>Run</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onDelete}><Text>Delete</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onSave} disabled={saving}><Text>{saving ? 'Saving...' : 'Save'}</Text></TouchableOpacity>
+        </View>
 
       </View>
     </GestureHandlerRootView>
