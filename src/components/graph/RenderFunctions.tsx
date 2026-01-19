@@ -108,7 +108,7 @@ export const RenderLink = memo(({ fromId, toId, portFrom, portTo, additionalPort
       }
     }
 
-    addArrowHead(p, start.x, start.y, end.x, end.y);
+    // addArrowHead(p, start.x, start.y, end.x, end.y);
     return p;
   });
   return (
@@ -150,7 +150,7 @@ export const RenderTempLine = ({ tempLine, isConnecting }) => {
       p.cubicTo(x1, y1 + offset, x2, y2 - offset, x2, y2);
     }
 
-    addArrowHead(p, x1, y1, x2, y2);
+    // addArrowHead(p, x1, y1, x2, y2);
     return p;
   });
 
@@ -159,7 +159,7 @@ export const RenderTempLine = ({ tempLine, isConnecting }) => {
   return (
     <Path
       path={path}
-      color="#727272"
+      color={LINK_COLOR}
       style="stroke"
       strokeWidth={2}
       opacity={opacity}
@@ -200,7 +200,7 @@ export const MinimapNode = ({ id, store, OFF }) => {
 // ================== STYLES ==================
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white' },
-  canvas: { flex: 1, backgroundColor: 'white' },
+  canvas: { flex: 1, backgroundColor: '#131314' },
   btn: {
     position: 'absolute',
     bottom: 40,

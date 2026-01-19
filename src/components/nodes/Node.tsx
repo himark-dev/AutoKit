@@ -81,6 +81,10 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
     ];
   });
 
+  const strokeColor = useDerivedValue(() =>
+    store.value[id]?.isActive ? 'red' : 'transparent'
+  );
+
   const iconName = ICONS[label];
   const iconMetrics = useMemo(() => {
     return iconFont ? iconFont.measureText(iconName) : { width: 0, height: 0, x: 0, y: 0 };
@@ -90,7 +94,7 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
     <Group transform={transform}>
       {/* Тело ноды теперь рисуем в 0,0 */}
       <Rect x={0} y={0} width={w} height={h} r={10} color={color}>
-        <Paint style="stroke" strokeWidth={2} color="#727272" />
+        <Paint style="stroke" strokeWidth={3} color={strokeColor} />
       </Rect>
 
       {/* Иконка центрируется относительно 0,0 */}
@@ -100,7 +104,7 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
           x={w / 2 - (iconMetrics.x + iconMetrics.width / 2)} 
           y={h / 2 - (iconMetrics.y + iconMetrics.height / 2)} 
           text={iconName}
-          color="#000000" 
+          color="white" 
         />
       )}
 
@@ -111,9 +115,8 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
           cx={port.x}
           cy={port.y}
           r={PORT_RADIUS}
-          color="#ffffff"
+          color="cyan"
         >
-          <Paint style="stroke" strokeWidth={2} color="#727272" />
         </Circle>
       ))}
 
@@ -124,9 +127,9 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
           cx={port.x}
           cy={port.y}
           r={PORT_RADIUS}
-          color="#ffffff"
+          color="#555"
         >
-          <Paint style="stroke" strokeWidth={2} color="#727272" />
+          <Paint style="stroke" strokeWidth={2} color="cyan" />
         </Circle>
       ))}
 
@@ -137,9 +140,8 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
           cx={port.x}
           cy={port.y}
           r={PORT_RADIUS}
-          color="#ffffff"
+          color="cyan"
         >
-          <Paint style="stroke" strokeWidth={2} color="#727272" />
         </Circle>
       ))}
 
@@ -151,7 +153,7 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
                 // Смещаем вниз: высота ноды + отступ (например, 15px)
                 y={h+20}
                 text={desc}
-                color="black" // Цвет текста под нодой (обычно белый или серый для темных тем)
+                color="white" // Цвет текста под нодой (обычно белый или серый для темных тем)
               />
             )}
     </Group>

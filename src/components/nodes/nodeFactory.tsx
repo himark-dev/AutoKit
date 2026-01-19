@@ -15,17 +15,17 @@ interface NodeDefinition {
 
 // Реестр настроек нод
 const NODE_DEFINITIONS: Record<NodeType, NodeDefinition> = {
-    'Code': {label: 'code', color: '#ffffff', inputCount: 1, outputCount: 1, additionalCount: 0},
-    'Filter': {label: 'filter', color: '#ffffff', inputCount: 1, outputCount: 1, additionalCount: 0},
-    'Merge': {label: 'merge', color: '#ffffff', inputCount: 2, outputCount: 1, additionalCount: 0},
-    'FlashLight': {label: 'flashlight', color: '#ffffff', inputCount: 1, outputCount: 1, additionalCount: 0},
-    'Vibration': {label: 'vibration', color: '#ffffff', inputCount: 1, outputCount: 1, additionalCount: 0},
-    'Webhook': {label: 'webhook', color: '#ffffff', inputCount: 0, outputCount: 1, additionalCount: 0},
-    'Schedule': {label: 'schedule', color: '#ffffff', inputCount: 0, outputCount: 1, additionalCount: 0},
-    'On App Event': {label: 'on_app_event', color: '#ffffff', inputCount: 0, outputCount: 1, additionalCount: 0},
-    'AI Agent': {label: 'ai_agent', color: '#ffffff', inputCount: 1, outputCount: 1, additionalCount: 3},
-    'OpenAI': {label: 'openAI', color: '#ffffff', inputCount: 1, outputCount: 1, additionalCount: 1},
-    'Document Loader': {label: 'document_loader', color: '#ffffff', inputCount: 0, outputCount: 1, additionalCount: 0},
+    'Code': {label: 'code', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 0},
+    'Filter': {label: 'filter', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 0},
+    'Merge': {label: 'merge', color: '#333', inputCount: 2, outputCount: 1, additionalCount: 0},
+    'FlashLight': {label: 'flashlight', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 0},
+    'Vibration': {label: 'vibration', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 0},
+    'Webhook': {label: 'webhook', color: '#333', inputCount: 0, outputCount: 1, additionalCount: 0},
+    'Schedule': {label: 'schedule', color: '#333', inputCount: 0, outputCount: 1, additionalCount: 0},
+    'On App Event': {label: 'on_app_event', color: '#333', inputCount: 0, outputCount: 1, additionalCount: 0},
+    'AI Agent': {label: 'ai_agent', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 3},
+    'OpenAI': {label: 'openAI', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 1},
+    'Document Loader': {label: 'document_loader', color: '#333', inputCount: 0, outputCount: 1, additionalCount: 0},
 };
 
 export const nodeFactory = (

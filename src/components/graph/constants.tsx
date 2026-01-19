@@ -12,7 +12,7 @@ const OFF = -10000;
 export { EDGE_MARGIN, EPSILON_PORT_HITBOX, AUTO_PAN_SPEED, FONT_SIZE, ICON_FONT_SIZE, RIGHT_MARGIN, WORLD_SIZE, MIN_SCALE, MAX_SCALE, OFF };
 // Constants for RenderFunctions.tsx --------------------->
 const NODE_SIZE = 80;
-const LINK_COLOR = '#6e6e6e';
+const LINK_COLOR = 'cyan';
 const LINK_WIDTH = 2.2;
 const MARGIN = 30;
 const ARROW_SIZE = 20;

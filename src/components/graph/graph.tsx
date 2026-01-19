@@ -276,6 +276,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
           if (!n) continue;
           if (adjX >= n.x.value && adjX <= n.x.value + n.width && adjY >= n.y.value && adjY <= n.y.value + n.height) {
             hitId = id;
+            nodesStore.value[id].isActive = 1;
             break;
           }
         }
@@ -473,6 +474,13 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
       });
 
     const tap = Gesture.Tap().onStart((e) => {
+      nodesStore.modify((val) => {
+        'worklet';
+        for (const id in val) {
+          val[id].isActive = 0;
+        }
+        return val;
+      });
       const adjX = (e.x - translateX.value) / scale.value;
       const adjY = (e.y - translateY.value) / scale.value;
       const rect = selectionRect.value || { x1: 0, y1: 0, x2: 0, y2: 0 };
@@ -490,6 +498,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
       for (const id in store) {
         const n = store[id];
         if (adjX >= n.x.value && adjX <= n.x.value + n.width && adjY >= n.y.value && adjY <= n.y.value + n.height) {
+          nodesStore.value[n.nodeId].isActive = 1;
           found = { nodeId: n.nodeId, x: n.x.value * scale.value + translateX.value, y: n.y.value * scale.value + translateY.value, width: n.width * scale.value, height: n.height * scale.value, scale: scale.value };
           break;
         }
