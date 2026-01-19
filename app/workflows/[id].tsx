@@ -6,8 +6,6 @@ import { WorkflowDB, HistoryDB } from '@/lib/database';
 import GraphApp from '@/src/components/graph/graph';
 import { useSharedValue } from 'react-native-reanimated';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 export default function WorkflowEditor() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -38,13 +36,12 @@ export default function WorkflowEditor() {
       setLoading(true);
       console.log('=== Loading workflow ===');
 
-      const jsonValue = await AsyncStorage.getItem(`@workflow_${id}`);
+      const jsonValue = await WorkflowDB.getById(`@workflow_${id}`);
       if (!jsonValue) return;
-      const savedData = JSON.parse(jsonValue);
+      const savedData = JSON.parse(jsonValue.json);
 
       nodesStore.modify((val) => {
         'worklet';
-        // clear and rewrite
         for (const k in val) delete val[k];
         Object.assign(val, savedData.coords);
         return val;
@@ -61,11 +58,10 @@ export default function WorkflowEditor() {
     }
   }, [nodesStore, id]);
 
-  // Сохранение workflow
   const saveWorkflow = useCallback(async () => {
     try {
       const dataToSave = { nodes, links, coords: nodesStore.value };
-      await AsyncStorage.setItem(`@workflow_${id}`, JSON.stringify(dataToSave));
+      await WorkflowDB.update(`@workflow_${id}`,dataToSave);
       alert('Graph is saved!');
     } catch (err: any) {
       console.error('Error saving workflow:', err);
@@ -75,7 +71,6 @@ export default function WorkflowEditor() {
     }
   }, [nodes, links, nodesStore, workflow, formData, id]);
 
-  // Запуск workflow
   const runWorkflow = async () => {
     if (!workflow) return;
     try {
