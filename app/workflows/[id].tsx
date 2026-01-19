@@ -39,51 +39,19 @@ export default function WorkflowEditor() {
       console.log('=== Loading workflow ===');
 
       const jsonValue = await AsyncStorage.getItem(`@workflow_${id}`);
-      if (!jsonValue) {
-        Alert.alert('Error', 'Workflow not found');
-        return;
-      }
-
-      const data = JSON.parse(jsonValue);
-
-      // // Восстанавливаем координаты в nodesStore
-      // nodesStore.modify((val) => {
-      //   'worklet';
-      //   for (const k in val) delete val[k];
-      //   for (const [id, node] of Object.entries(data.graph?.coords || {})) {
-      //     val[id] = {
-      //       ...node,
-      //       x: useSharedValue(node.x),
-      //       y: useSharedValue(node.y),
-      //     };
-      //   }
-      //   return val;
-      // });
+      if (!jsonValue) return;
+      const savedData = JSON.parse(jsonValue);
 
       nodesStore.modify((val) => {
         'worklet';
+        // clear and rewrite
         for (const k in val) delete val[k];
-        for (const [id, node] of Object.entries(data.graph?.coords || {})) {
-          val[id] = {
-            ...node,
-            x: useSharedValue(node.x),
-            y: useSharedValue(node.y),
-          };
-          console.log(`Node ${id} loaded: x=${node.x}, y=${node.y}, type=${node.desc}`);
-        }
+        Object.assign(val, savedData.coords);
         return val;
       });
 
-      setWorkflow(data);
-      setFormData({ name: data.name || '', json: data.json || '' });
-      setNodes(data.graph?.nodes || []);
-      setLinks(data.graph?.links || []);
-
-      console.log('Nodes loaded:');
-      (data.graph?.nodes || []).forEach(n => console.log(`Node ${n.id}: x=${n.x}, y=${n.y}, graphId=${n.graphId}, type=${n.type}`));
-      console.log('Links loaded:', JSON.stringify(data.graph?.links || [], null, 2));
-      console.log('Coords loaded:', JSON.stringify(data.graph?.coords || {}, null, 2));
-
+      setNodes(savedData.nodes);
+      setLinks(savedData.links);
       Alert.alert('Success', 'Workflow loaded!');
     } catch (e) {
       console.error('Error loading workflow:', e);
@@ -96,51 +64,9 @@ export default function WorkflowEditor() {
   // Сохранение workflow
   const saveWorkflow = useCallback(async () => {
     try {
-      setSaving(true);
-      console.log('=== Saving workflow ===');
-
-      // Формируем graph с реальными координатами
-      const graph = {
-        nodes: nodes.map(n => {
-          const stored = nodesStore.value[n.id];
-          const x = stored?.x?.value ?? n.x ?? 0;
-          const y = stored?.y?.value ?? n.y?.value ?? 0;
-
-          console.log(`Node ${n.id}: x=${x}, y=${y}, graphId=${n.graphId}, type=${n.type}`);
-          return { ...n, x, y };
-        }),
-        links,
-        coords: Object.fromEntries(
-          Object.entries(nodesStore.value).map(([id, n]) => [
-            id,
-            {
-              ...n,
-              x: n.x?.value ?? 0,
-              y: n.y?.value ?? 0,
-            }
-          ])
-        ),
-      };
-
-      console.log('Links:', JSON.stringify(links, null, 2));
-      console.log('Coords in nodesStore:', JSON.stringify(graph.coords, null, 2));
-
-      const workflowData = {
-        ...workflow,
-        title: formData.name || workflow?.title || 'New Workflow',
-        graph,
-        json: formData.json || workflow?.json || '',
-      };
-
-      // Сохраняем в AsyncStorage
-      await AsyncStorage.setItem(`@workflow_${id}`, JSON.stringify(workflowData));
-
-      // Обновляем локальное состояние
-      setWorkflow(workflowData);
-      setNodes(graph.nodes);
-      setLinks(graph.links);
-
-      Alert.alert('Success', 'Workflow saved!');
+      const dataToSave = { nodes, links, coords: nodesStore.value };
+      await AsyncStorage.setItem(`@workflow_${id}`, JSON.stringify(dataToSave));
+      alert('Graph is saved!');
     } catch (err: any) {
       console.error('Error saving workflow:', err);
       Alert.alert('Error', err.message || 'Failed to save workflow');
