@@ -30,7 +30,7 @@
     </activity>
 
     <receiver
-      android:name=".Trigger"
+      android:name=".core.Receiver"
       android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />
