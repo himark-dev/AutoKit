@@ -53,5 +53,13 @@
       </intent-filter>
     </service>
 
+    <service
+      android:name="tech.autokit.builtin.Plugin"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="tech.autokit.intent.action.EXTENSION" />
+      </intent-filter>
+    </service>
+
   </application>
 </manifest>
