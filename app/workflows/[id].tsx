@@ -1,63 +1,51 @@
 // app/workflows/[id].tsx
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Alert, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Save, Play, Trash2 } from 'lucide-react-native';
 import { WorkflowDB, HistoryDB } from '@/lib/database';
-
-const DEFAULT_WORKFLOW_TEMPLATE = {
-  title: "New Workflow",
-  description: "Custom workflow description",
-  lastRun: "Never",
-  nodeCount: 3,
-  graph: {
-    nodes: [
-      { id: "1", type: "start", label: "Start", x: 100, y: 200 },
-      { id: "2", type: "process", label: "Process", x: 300, y: 200 },
-      { id: "3", type: "end", label: "End", x: 500, y: 200 }
-    ],
-    links: [
-      { source: "1", target: "2" },
-      { source: "2", target: "3" }
-    ],
-    coords: {
-      "1": { x: 100, y: 200 },
-      "2": { x: 300, y: 200 },
-      "3": { x: 500, y: 200 }
-    }
-  }
-};
+import GraphApp from '@/src/components/graph/graph';
+import { useSharedValue } from 'react-native-reanimated';
 
 export default function WorkflowEditor() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [workflow, setWorkflow] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    json: ''
-  });
+  const [formData, setFormData] = useState({ name: '', json: '' });
 
-  // Загрузка workflow
+  // nodes и links для React рендера
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [links, setLinks] = useState<any[]>([]);
+
+  // nodesStore для хранения координат внутри GraphApp
+  const nodesStore = useSharedValue({});
+
+  // Загрузка workflow при монтировании
   useEffect(() => {
     if (id === 'new') {
-      // Редирект на главную страницу workflows
       router.replace('/workflows');
       return;
     }
-    
     loadWorkflow();
   }, [id]);
 
-  const loadWorkflow = async () => {
+  const loadWorkflow = useCallback(async () => {
     try {
       setLoading(true);
       const data = await WorkflowDB.getById(id as string);
       if (data) {
         setWorkflow(data);
+        const parsed = JSON.parse(data.json);
+        nodesStore.modify((val) => {
+          'worklet';
+          for (const k in val) delete val[k];
+          Object.assign(val, parsed.graph.coords.value);
+          return val;
+        });
+        setNodes(parsed.graph.nodes);
+        setLinks(parsed.graph.links);
         setFormData({
           name: data.name,
           json: data.json
@@ -72,16 +60,18 @@ export default function WorkflowEditor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [nodesStore, id]);
 
-  // Сохранение workflow
-  const saveWorkflow = async () => {
+  const saveWorkflow = useCallback(async () => {
     try {
       setSaving(true);
-      
       let workflowData;
       try {
         workflowData = JSON.parse(formData.json);
+        workflowData.graph.nodes = nodes;
+        workflowData.graph.links = links;
+        workflowData.graph.coords = nodesStore;
+        workflowData.nodeCount = nodes.length;
       } catch (error: any) {
         Alert.alert("Invalid JSON", `Error: ${error.message}`);
         return;
@@ -120,213 +110,86 @@ export default function WorkflowEditor() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [nodes, links, nodesStore, workflow, formData, id]);
 
-  // Запуск workflow
   const runWorkflow = async () => {
     if (!workflow) return;
-    
     try {
       const runId = await HistoryDB.add(
         workflow.id,
         'RUNNING',
-        `Starting workflow from editor: ${workflow.name}\nTimestamp: ${new Date().toISOString()}`
+        `Starting workflow from editor: ${workflow.title}\nTimestamp: ${new Date().toISOString()}`
       );
 
-      // Имитация выполнения
       setTimeout(async () => {
         try {
           await HistoryDB.updateRunStatus(
-            runId, 
-            'SUCCESS', 
-            `Workflow ${workflow.name} executed from editor\nExecution time: 1.8s\nStatus: Success`
+            runId,
+            'SUCCESS',
+            `Workflow ${workflow.title} executed from editor\nExecution time: 1.8s\nStatus: Success`
           );
         } catch (error) {
           console.error('Error updating run:', error);
         }
       }, 1800);
 
-      Alert.alert(
-        "Workflow Started",
-        `Workflow is now running. Check History tab for details.`,
-        [{ text: "OK" }]
-      );
+      Alert.alert('Workflow Started', 'Workflow is now running. Check History tab for details.');
     } catch (error) {
       console.error('Error running workflow:', error);
-      Alert.alert("Error", "Failed to start workflow");
+      Alert.alert('Error', 'Failed to start workflow');
     }
   };
 
   // Удаление workflow
   const deleteWorkflow = () => {
     if (!workflow) return;
-    
     Alert.alert(
-      "Delete Workflow",
-      `Are you sure you want to delete "${workflow.name}"?`,
+      'Delete Workflow',
+      `Are you sure you want to delete "${workflow.title}"?`,
       [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
           onPress: async () => {
             try {
               await WorkflowDB.delete(workflow.id);
-              Alert.alert("Success", "Workflow deleted");
+              Alert.alert('Success', 'Workflow deleted');
               router.back();
             } catch (error) {
               console.error('Error deleting workflow:', error);
-              Alert.alert("Error", "Failed to delete workflow");
+              Alert.alert('Error', 'Failed to delete workflow');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
-  // Валидация JSON
-  const handleJsonChange = (text: string) => {
-    setFormData({...formData, json: text});
-  };
-
-  // Предпросмотр JSON
-  const previewJson = () => {
-    try {
-      const parsed = JSON.parse(formData.json);
-      Alert.alert(
-        "JSON Preview",
-        "JSON is valid. Structure:\n" + 
-        `- Title: ${parsed.title || 'Not set'}\n` +
-        `- Description: ${parsed.description || 'Not set'}\n` +
-        `- Nodes: ${parsed.graph?.nodes?.length || 0}\n` +
-        `- Links: ${parsed.graph?.links?.length || 0}`,
-        [{ text: "OK" }]
-      );
-    } catch (error: any) {
-      Alert.alert(
-        "Invalid JSON", 
-        `Error: ${error.message}`,
-        [{ text: "OK" }]
-      );
-    }
-  };
-
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#8ab4f8" />
-        </View>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: '#131314', justifyContent: 'center', alignItems: 'center' }}
+      >
+        <ActivityIndicator size="large" color="#8ab4f8" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
-      <View className="flex-1 bg-google-bg px-6">
-        {/* Заголовок */}
-        <View className="flex-row items-center justify-between mb-6 mt-4">
-          <View className="flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="mr-4">
-              <ArrowLeft color="white" size={24} />
-            </TouchableOpacity>
-            <Text className="text-white font-google text-xl">
-              {workflow?.name || 'Edit Workflow'}
-            </Text>
-          </View>
-          
-          <View className="flex-row">
-            <TouchableOpacity 
-              className="w-10 h-10 bg-blue-500/20 rounded-xl items-center justify-center mr-2"
-              onPress={runWorkflow}
-            >
-              <Play color="#8ab4f8" size={20} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              className="w-10 h-10 bg-red-500/20 rounded-xl items-center justify-center mr-2"
-              onPress={deleteWorkflow}
-            >
-              <Trash2 color="#ef4444" size={20} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              className="w-10 h-10 bg-green-500/20 rounded-xl items-center justify-center"
-              onPress={saveWorkflow}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#22c55e" />
-              ) : (
-                <Save color="#22c55e" size={20} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Форма редактирования */}
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View className="mb-4">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-gray-400 font-google text-sm">Workflow Name</Text>
-              <TouchableOpacity 
-                className="bg-blue-500/20 px-3 py-1 rounded-lg"
-                onPress={previewJson}
-              >
-                <Text className="text-blue-400 font-google text-xs">Preview JSON</Text>
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              className="bg-google-card text-white font-google p-3 rounded-xl"
-              value={formData.name}
-              onChangeText={(text) => setFormData({...formData, name: text})}
-              placeholder="Enter workflow name"
-              placeholderTextColor="#6b7280"
-            />
-          </View>
-
-          <View className="mb-4">
-            <Text className="text-gray-400 font-google text-sm mb-2">Workflow JSON</Text>
-            <TextInput
-              className="bg-google-card text-white font-google p-3 rounded-xl min-h-[400px]"
-              value={formData.json}
-              onChangeText={handleJsonChange}
-              placeholder="Enter workflow JSON"
-              placeholderTextColor="#6b7280"
-              multiline
-              textAlignVertical="top"
-              style={{ height: 400 }}
-            />
-          </View>
-
-          <View className="mb-8">
-            <Text className="text-gray-500 font-google text-xs mb-2">
-              Required JSON structure:
-            </Text>
-            <View className="bg-gray-900/50 p-3 rounded-lg">
-              <Text className="text-gray-400 font-google text-xs font-mono">
-                {"{\n" +
-                '  "title": "Workflow Name",\n' +
-                '  "description": "Description",\n' +
-                '  "lastRun": "Never",\n' +
-                '  "nodeCount": 3,\n' +
-                '  "graph": {\n' +
-                '    "nodes": [\n' +
-                '      {"id": "1", "type": "start", "label": "Start", "x": 100, "y": 200}\n' +
-                '    ],\n' +
-                '    "links": [\n' +
-                '      {"source": "1", "target": "2"}\n' +
-                '    ],\n' +
-                '    "coords": {\n' +
-                '      "1": {"x": 100, "y": 200}\n' +
-                '    }\n' +
-                '  }\n' +
-                "}"}
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#111' }}>
+      <StatusBar barStyle="light-content" />
+      <GraphApp
+        nodes={nodes}
+        setNodes={setNodes}
+        links={links}
+        setLinks={setLinks}
+        nodesStore={nodesStore}
+        onSave={saveWorkflow}
+        onRun={runWorkflow}
+        onDelete={deleteWorkflow}
+        saving={saving}
+      />
     </SafeAreaView>
   );
 }
