@@ -212,7 +212,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  menu: { flexDirection: 'row', position: 'absolute', top: 50, right: 20, zIndex: 100 },
+  menu: { flexDirection: 'row', position: 'absolute', top: 10, right: 20, zIndex: 100 },
   menuBtn: { backgroundColor: '#444', padding: 10, marginLeft: 10, borderRadius: 8, borderWidth: 1, borderColor: 'cyan' },
   menuText: { color: 'cyan', fontWeight: 'bold', fontSize: 12 },
   modalOverlay: { backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },

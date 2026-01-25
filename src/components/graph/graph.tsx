@@ -12,6 +12,7 @@ import { NodeMenuOverlay } from '@/src/components/interface/nodeFloatMenu';
 import { runOnJS } from 'react-native-worklets';
 import { Play, Plus, Trash2, Save } from "lucide-react-native";
 import {MINIMAP_SIZE, WORLD_SIZE, MIN_SCALE, MAX_SCALE, EDGE_MARGIN, EPSILON_PORT_HITBOX, AUTO_PAN_SPEED, FONT_SIZE, ICON_FONT_SIZE, RIGHT_MARGIN, OFF} from './constants';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { GraphEngine } = NativeModules;
 
@@ -579,70 +580,72 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
   const minimapContentTransform = [{ scale: MINIMAP_RATIO }, { translateX: WORLD_SIZE / 2 }, { translateY: WORLD_SIZE / 2 }];
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onAddNode={(type) => addNodeOfType(type)} />
-        <View style={[styles.menu, { marginLeft: sidebarOpen ? 240 : 0 }]}> 
-          <TouchableOpacity style={styles.menuBtn} onPress={() => setSidebarOpen(v => !v)}>
-            <Plus color="cyan" size={16} />
-            {/* <Text style={styles.menuText}>{sidebarOpen ? 'Hide Library' : 'Show Library'}</Text> */}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuBtn} onPress={onRun}>
-          <Play color="cyan" size={16} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuBtn} onPress={onDelete}>
-            <Trash2 color="cyan" size={16} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuBtn} onPress={onSave}>
-          <Save color="cyan" size={16} />
-          </TouchableOpacity>
-        </View>
-        <GestureDetector gesture={composedGesture}>
-          <Canvas style={styles.canvas}>
-            <Group transform={sceneTransform}>
-              {links.map(l => (
-                <RenderLink key={l.id} fromId={l.from} toId={l.to} portFrom={l.portFrom} portTo={l.portTo} additionalPort={l.additionalPort} store={nodesStore} />
-              ))}
-
-              <RenderTempLine tempLine={tempLine} isConnecting={isConnecting} />
-
-              {nodes.map(n => n.id === activeNodeIdJS ? null : (
-                <NodeRenderer key={n.id} id={n.id} store={nodesStore} font={font} iconFont={iconFont} />
-              ))}
-
-              {activeNodeIdJS && (
-                <NodeRenderer key={`active-${activeNodeIdJS}`} id={activeNodeIdJS} store={nodesStore} font={font} iconFont={iconFont} />
-              )}
-
-              <SelectionRect selectionSV={selectionRect} />
-
-            </Group>
-          </Canvas>
-        </GestureDetector>
-
-        <GestureDetector gesture={minimapGesture}>
-          <View style={styles.minimapContainer}>
-            <Canvas style={{ width: MINIMAP_SIZE, height: MINIMAP_SIZE }}>
-              <Group transform={minimapContentTransform}>
-                {nodes.map(n => <MinimapNode key={n.id} id={n.id} store={nodesStore} OFF={OFF} />)}
-              </Group>
-              <Rect x={vX} y={vY} width={vW} height={vH} color="green" style="stroke" strokeWidth={2} />
-            </Canvas>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onAddNode={(type) => addNodeOfType(type)} />
+          <View style={[styles.menu, { marginLeft: sidebarOpen ? 240 : 0 }]}> 
+            <TouchableOpacity style={styles.menuBtn} onPress={() => setSidebarOpen(v => !v)}>
+              <Plus color="cyan" size={16} />
+              {/* <Text style={styles.menuText}>{sidebarOpen ? 'Hide Library' : 'Show Library'}</Text> */}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuBtn} onPress={onRun}>
+            <Play color="cyan" size={16} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuBtn} onPress={onDelete}>
+              <Trash2 color="cyan" size={16} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuBtn} onPress={onSave}>
+            <Save color="cyan" size={16} />
+            </TouchableOpacity>
           </View>
-        </GestureDetector>
+          <GestureDetector gesture={composedGesture}>
+            <Canvas style={styles.canvas}>
+              <Group transform={sceneTransform}>
+                {links.map(l => (
+                  <RenderLink key={l.id} fromId={l.from} toId={l.to} portFrom={l.portFrom} portTo={l.portTo} additionalPort={l.additionalPort} store={nodesStore} />
+                ))}
 
-        {activeMenu && (
-          <NodeMenuOverlay
-            visible={!!activeMenu}
-            x={activeMenu.x}
-            y={activeMenu.y}
-            width={activeMenu.width}
-            scale={activeMenu.scale}
-            onAction={handleMenuAction}
-          />
-        )}
+                <RenderTempLine tempLine={tempLine} isConnecting={isConnecting} />
 
-      </View>
-    </GestureHandlerRootView>
+                {nodes.map(n => n.id === activeNodeIdJS ? null : (
+                  <NodeRenderer key={n.id} id={n.id} store={nodesStore} font={font} iconFont={iconFont} />
+                ))}
+
+                {activeNodeIdJS && (
+                  <NodeRenderer key={`active-${activeNodeIdJS}`} id={activeNodeIdJS} store={nodesStore} font={font} iconFont={iconFont} />
+                )}
+
+                <SelectionRect selectionSV={selectionRect} />
+
+              </Group>
+            </Canvas>
+          </GestureDetector>
+
+          <GestureDetector gesture={minimapGesture}>
+            <View style={styles.minimapContainer}>
+              <Canvas style={{ width: MINIMAP_SIZE, height: MINIMAP_SIZE }}>
+                <Group transform={minimapContentTransform}>
+                  {nodes.map(n => <MinimapNode key={n.id} id={n.id} store={nodesStore} OFF={OFF} />)}
+                </Group>
+                <Rect x={vX} y={vY} width={vW} height={vH} color="green" style="stroke" strokeWidth={2} />
+              </Canvas>
+            </View>
+          </GestureDetector>
+
+          {activeMenu && (
+            <NodeMenuOverlay
+              visible={!!activeMenu}
+              x={activeMenu.x}
+              y={activeMenu.y}
+              width={activeMenu.width}
+              scale={activeMenu.scale}
+              onAction={handleMenuAction}
+            />
+          )}
+
+        </View>
+      </GestureHandlerRootView>
+    </SafeAreaView>
   );
 }
