@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Text, useWindowDimensions, NativeModules } from 'react-native';
+import { View, TouchableOpacity, Text, useWindowDimensions, NativeModules, BackHandler, Alert } from 'react-native';
 import { Canvas, Group, useFont, Rect } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSharedValue, makeMutable, clamp, withSpring, useDerivedValue, useFrameCallback } from 'react-native-reanimated';
@@ -13,8 +13,7 @@ import { runOnJS } from 'react-native-worklets';
 import { Play, Plus, Trash2, Save } from "lucide-react-native";
 import {MINIMAP_SIZE, WORLD_SIZE, MIN_SCALE, MAX_SCALE, EDGE_MARGIN, EPSILON_PORT_HITBOX, AUTO_PAN_SPEED, FONT_SIZE, ICON_FONT_SIZE, RIGHT_MARGIN, OFF} from './constants';
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const { GraphEngine } = NativeModules;
+import { router } from 'expo-router';
 
 type GraphAppProps = {
   nodes: any[];
@@ -35,6 +34,44 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
   const [activeMenu, setActiveMenu] = useState(null);
   const [activeNodeIdJS, setActiveNodeIdJS] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      Alert.alert(
+        'Save Workflow?',
+        'You have unsaved changes',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'No',
+            style: 'destructive',
+            onPress: () => {
+              router.back();
+            },
+          },
+          {
+            text: 'Yes',
+            onPress: () => {
+              onSave();
+              router.back();
+            },
+          },
+        ]
+      );
+
+      return true;
+    };
+
+    const sub = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+
+    return () => sub.remove();
+  }, [onSave]);
 
   useEffect(() => {
     nodes.forEach(n => {
@@ -587,16 +624,12 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
           <View style={[styles.menu, { marginLeft: sidebarOpen ? 240 : 0 }]}> 
             <TouchableOpacity style={styles.menuBtn} onPress={() => setSidebarOpen(v => !v)}>
               <Plus color="cyan" size={16} />
-              {/* <Text style={styles.menuText}>{sidebarOpen ? 'Hide Library' : 'Show Library'}</Text> */}
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuBtn} onPress={onRun}>
             <Play color="cyan" size={16} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuBtn} onPress={onDelete}>
               <Trash2 color="cyan" size={16} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuBtn} onPress={onSave}>
-            <Save color="cyan" size={16} />
             </TouchableOpacity>
           </View>
           <GestureDetector gesture={composedGesture}>

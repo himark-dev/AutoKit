@@ -95,8 +95,6 @@ export default function WorkflowEditor() {
         title: workflowName
       });
       
-      Alert.alert("Success", "Workflow updated successfully");
-      
       // Обновляем локальное состояние
       setWorkflow({
         ...workflow,
