@@ -13,7 +13,6 @@ import {
   useDerivedValue,
   configureReanimatedLogger,
   ReanimatedLogLevel,
-  SharedValue,
 } from 'react-native-reanimated';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { MinimapNode, RenderTempLine, RenderLink, styles } from '@/src/components/graph/RenderFunctions';
@@ -42,18 +41,19 @@ configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
 });
-import { NodeData, NodeDataBackend, LinkDataBackend } from '@/src/components/nodes/Node';
+
+type Port = { x: number; y: number };
+import { NodeData, LinkData } from '@/src/components/nodes/Node';
 type NodeType = NodeData
-type NodeTypeBackend = NodeDataBackend
-type LinkTypeBackend = LinkDataBackend
-type NodesStore = Record<string, NodeType>;
+type LinkType = LinkData
+
 
 type GraphAppProps = {
-  nodes: NodeTypeBackend[];
-  setNodes: React.Dispatch<React.SetStateAction<NodeTypeBackend[]>>;
-  links: LinkTypeBackend[];
-  setLinks: React.Dispatch<React.SetStateAction<LinkTypeBackend[]>>;
-  nodesStore: SharedValue<Record<string, NodeData>>;
+  nodes: NodeType[];
+  setNodes: React.Dispatch<React.SetStateAction<NodeType[]>>;
+  links: LinkType[];
+  setLinks: React.Dispatch<React.SetStateAction<LinkType[]>>;
+  nodesStore: any;
   onSave: () => void;
   onRun?: () => void;
   onDelete?: () => void;
@@ -79,7 +79,6 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
   const [visibleNodeIds, setVisibleNodeIds] = useState<string[]>([]);
   const [visibleLinkIds, setVisibleLinkIds] = useState<string[]>([]);
 
-  // minimap rect stored in React state to avoid reading SharedValue.value during render
   const [minimapRect, setMinimapRect] = useState({ x: 0, y: 0, w: 0, h: 0 });
 
   useEffect(() => {
@@ -94,6 +93,40 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
   }, [onSave]);
+
+  useEffect(() => {
+    if (!nodes || !nodesStore) return;
+    nodesStore.modify((val: any) => {
+      'worklet';
+      const order: string[] = [];
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        order.push(n.nodeId);
+        if (!val[n.nodeId]) {
+          val[n.nodeId] = {
+            nodeId: n.nodeId,
+            x: { value: n.x ?? 0 },
+            y: { value: n.y ?? 0 },
+            width: n.width ?? 100,
+            height: n.height ?? 50,
+            type: n.desc,
+            graphId: n.graphId ?? null,
+            inputPorts: n.inputPorts ?? [],
+            outputPorts: n.outputPorts ?? [],
+            additionalPorts: n.additionalPorts ?? [],
+            isActive: 0,
+          };
+        } else {
+          if (n.x != null) val[n.nodeId].x.value = n.x;
+          if (n.y != null) val[n.nodeId].y.value = n.y;
+          if (n.width != null) val[n.nodeId].width = n.width;
+          if (n.height != null) val[n.nodeId].height = n.height;
+        }
+      }
+      val.__order = order;
+      return val;
+    });
+  }, [nodes, nodesStore]);
 
   const sidebarX = useSharedValue(-240);
   useEffect(() => {
@@ -113,13 +146,11 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
   const translateY = useSharedValue(0);
   const selectedNodeIds = useSharedValue<string[]>([]);
   const linksSV = useSharedValue(links || []);
-
   const isPinching = useSharedValue(false);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
   const pinchCenter = useSharedValue({ x: 0, y: 0 });
   const savedScale = useSharedValue(1);
-
   const selectionRect = useSharedValue({ x1: 0, y1: 0, x2: 0, y2: 0, active: false });
   const startSelectionRect = useSharedValue<any>(null);
   const selectionDragging = useSharedValue(false);
@@ -196,7 +227,6 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
   const addNodeOfType = useCallback((type: string) => {
     const id = `n_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const graphId = `g_${id}`;
-    // read current view transform to place node near center — fine on user event
     const initX = (screenWidth / 4 - translateX.value) / (scale.value || 1);
     const initY = (screenHeight / 4 - translateY.value) / (scale.value || 1);
     const xSV = makeMutable(initX);
@@ -211,7 +241,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
       return val;
     });
 
-    setNodes(prev => [...prev, { "id": id, "graphId": graphId, "desc": type }]);
+    setNodes(prev => [...prev, node]);
     setSidebarOpen(false);
   }, [screenWidth, screenHeight, nodesStore]);
 
@@ -261,7 +291,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     setLinks(prevLinks => {
       const updatedLinks = prevLinks.filter(l => l.from !== nodeId && l.to !== nodeId);
       setNodes(prevNodes => {
-        const updatedNodes = prevNodes.filter(n => n.id !== nodeId);
+        const updatedNodes = prevNodes.filter(n => n.nodeId !== nodeId);
         const newNodes = recalculateGraphIds(updatedNodes, updatedLinks);
         nodesStore.modify((val: any) => {
           'worklet';
@@ -327,7 +357,6 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     });
   }, [nodesStore]);
 
-  // visibleNodeIdsSV: derived value on UI thread
   const visibleNodeIdsSV = useDerivedValue(() => {
     'worklet';
     const val = nodesStore.value || {};
@@ -353,7 +382,6 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     return res;
   });
 
-  // Update React state from UI thread but only when IDs actually change
   const updateVisibleNodeIds = useCallback((ids?: string[]) => {
     setVisibleNodeIds(prev => {
       if (arraysEqual(prev, ids || [])) return prev;
@@ -700,7 +728,6 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
 
   const composedGesture = useMemo(() => Gesture.Simultaneous(nodeGestures, canvasGesture), [nodeGestures, canvasGesture]);
 
-  // minimap derived values (on UI thread)
   const vX = useDerivedValue(() => {
     const s = scale.value || 1;
     const w = ((screenWidth - RIGHT_MARGIN) / s) * MINIMAP_RATIO;
@@ -722,7 +749,6 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     return Math.min(h, MINIMAP_SIZE);
   });
 
-  // update minimap React state only when changed
   const updateMinimapRect = useCallback((rect: { x: number; y: number; w: number; h: number }) => {
     setMinimapRect(prev => {
       if (prev.x === rect.x && prev.y === rect.y && prev.w === rect.w && prev.h === rect.h) return prev;
@@ -808,6 +834,17 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
             </Canvas>
           </GestureDetector>
 
+          <GestureDetector gesture={minimapGesture}>
+            <View style={styles.minimapContainer}>
+              <Canvas style={{ width: MINIMAP_SIZE, height: MINIMAP_SIZE }}>
+                <Group transform={[{ scale: MINIMAP_RATIO }, { translateX: WORLD_SIZE / 2 }, { translateY: WORLD_SIZE / 2 }]}>
+                  {nodes.map(n => (<MinimapNode key={n.nodeId} id={n.nodeId} store={nodesStore} OFF={OFF} />))}
+                </Group>
+                {/* Render minimap selection rect from React state (safe in render) */}
+                <SkiaRect x={minimapRect.x} y={minimapRect.y} width={minimapRect.w} height={minimapRect.h} color="green" style="stroke" strokeWidth={2} />
+              </Canvas>
+            </View>
+          </GestureDetector>
 
           {activeMenu && (<NodeMenuOverlay visible x={activeMenu.x} y={activeMenu.y} width={activeMenu.width} scale={activeMenu.scale} onAction={handleMenuAction} />)}
         </View>

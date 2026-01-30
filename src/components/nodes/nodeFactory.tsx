@@ -2,8 +2,7 @@ import { createNode, NodeData, NodeView } from '@/src/components/nodes/Node'
 import { SharedValue } from 'react-native-reanimated';
 
 
-// Типы нод, которые есть в твоем приложении
-export type NodeType = 'Code' | 'Filter' | 'Merge' | 'FlashLight' | 'Vibration' | 'Webhook' | 'Schedule' | 'On App Event' | 'AI Agent' | 'OpenAI' | 'Document Loader';
+export type NodeDefinitionType = 'Code' | 'Filter' | 'Merge' | 'FlashLight' | 'Vibration' | 'Webhook' | 'Schedule' | 'On App Event' | 'AI Agent' | 'OpenAI' | 'Document Loader';
 
 interface NodeDefinition {
   label: string;
@@ -13,8 +12,7 @@ interface NodeDefinition {
   additionalCount: number;
 }
 
-// Реестр настроек нод
-const NODE_DEFINITIONS: Record<NodeType, NodeDefinition> = {
+const NODE_DEFINITIONS: Record<NodeDefinitionType, NodeDefinition> = {
     'Code': {label: 'code', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 0},
     'Filter': {label: 'filter', color: '#333', inputCount: 1, outputCount: 1, additionalCount: 0},
     'Merge': {label: 'merge', color: '#333', inputCount: 2, outputCount: 1, additionalCount: 0},
@@ -29,7 +27,7 @@ const NODE_DEFINITIONS: Record<NodeType, NodeDefinition> = {
 };
 
 export const nodeFactory = (
-    type: NodeType,
+    type: NodeDefinitionType,
     nodeId: string,
     graphId: string,
     x: SharedValue<number>,
@@ -37,7 +35,6 @@ export const nodeFactory = (
   ): NodeData => {
     const def = NODE_DEFINITIONS[type];
 
-    // Вызываем твою функцию createNode, передавая параметры из реестра
     return createNode({
       nodeId,
       graphId,
@@ -53,6 +50,5 @@ export const nodeFactory = (
   };
 
   export const NodeRenderer: React.FC<{ id: string; store: any, font: any, iconFont: any }> = (props) => {
-    // Сейчас у нас один тип визуализации, но в будущем здесь может быть switch(node.type)
     return <NodeView {...props} />;
   };

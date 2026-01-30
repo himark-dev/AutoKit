@@ -16,12 +16,26 @@ const ICONS: Record<string, string> = {
   'document_loader': '\uF21A',
 };
 
-// Константы выносим за пределы компонента
 export const PORT_RADIUS = 6;
 const PORT_SPACING = 20;
 const NODE_MIN_WIDTH = 80;
 const NODE_MIN_HEIGHT = 80;
 const OFF = -10000;
+
+export interface LinkDataBackend {
+  id: string;
+  from: string;
+  to: string;
+  portFrom?: number;
+  portTo?: number;
+  additionalPort?: number
+}
+
+export interface NodeDataBackend {
+  id: string;
+  graphId: string;
+  desc: string;
+}
 
 export interface NodeData {
   nodeId: string;
@@ -34,9 +48,8 @@ export interface NodeData {
   additionalCount: number;
   x: SharedValue<number>;
   y: SharedValue<number>;
-  width: number;  // Предварительно рассчитанная ширина
-  height: number; // Предварительно рассчитанная высота
-  // Относительные координаты (offset)
+  width: number;
+  height: number;
   inputPorts: { x: number; y: number }[];
   outputPorts: { x: number; y: number }[];
   additionalPorts: {x: number; y: number}[];
@@ -45,9 +58,7 @@ export interface NodeData {
 export const createNode = (data: any): NodeData => {
   const w = Math.max(Math.max(data.inputCount, data.outputCount) * PORT_SPACING, NODE_MIN_WIDTH);
   const h = Math.max(data.additionalCount * PORT_SPACING, NODE_MIN_HEIGHT)
-  // const h = NODE_MIN_HEIGHT;
 
-  // Рассчитываем позиции портов ОДИН раз при создании
   const inputPorts = Array.from({ length: data.inputCount }).map((_, i) => ({
     x: (w / (data.inputCount + 1)) * (i + 1),
     y: 0
@@ -92,12 +103,10 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
 
   return (
     <Group transform={transform}>
-      {/* Тело ноды теперь рисуем в 0,0 */}
       <Rect x={0} y={0} width={w} height={h} r={10} color={color}>
         <Paint style="stroke" strokeWidth={3} color={strokeColor} />
       </Rect>
 
-      {/* Иконка центрируется относительно 0,0 */}
       {iconFont && (
         <SkiaText 
           font={iconFont}
@@ -108,7 +117,6 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
         />
       )}
 
-      {/* Input ports */}
       {inputPorts.map((port, i) => (
         <Circle
           key={`in-${i}`}
@@ -120,7 +128,6 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
         </Circle>
       ))}
 
-      {/* Output ports */}
       {outputPorts.map((port, i) => (
         <Circle
           key={`out-${i}`}
@@ -133,7 +140,6 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
         </Circle>
       ))}
 
-      {/* Additional ports */}
       {additionalPorts.map((port, i) => (
         <Circle
           key={`out-${i}`}
@@ -148,12 +154,10 @@ export const NodeView: React.FC<{ id: string; store: any; font: any, iconFont: a
       {font && desc && (
               <SkiaText
                 font={font}
-                // Центрируем текст по горизонтали: (ширина ноды / 2) - (ширина текста / 2)
                 x={0}
-                // Смещаем вниз: высота ноды + отступ (например, 15px)
                 y={h+20}
                 text={desc}
-                color="white" // Цвет текста под нодой (обычно белый или серый для темных тем)
+                color="white"
               />
             )}
     </Group>

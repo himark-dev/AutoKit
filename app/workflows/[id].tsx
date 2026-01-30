@@ -6,6 +6,11 @@ import { WorkflowDB, HistoryDB } from '@/lib/database';
 import GraphApp from '@/src/components/graph/graph';
 import { useSharedValue } from 'react-native-reanimated';
 
+import { NodeData, LinkDataBackend, NodeDataBackend } from '@/src/components/nodes/Node';
+type NodeType = NodeData
+type LinkTypeBackend = LinkDataBackend
+type NodeTypeBackend = NodeDataBackend
+
 export default function WorkflowEditor() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -16,11 +21,11 @@ export default function WorkflowEditor() {
   const [formData, setFormData] = useState({ name: '', json: '' });
 
   // nodes и links для React рендера
-  const [nodes, setNodes] = useState<any[]>([]);
-  const [links, setLinks] = useState<any[]>([]);
+  const [nodes, setNodes] = useState<NodeTypeBackend[]>([]);
+  const [links, setLinks] = useState<LinkTypeBackend[]>([]);
 
   // nodesStore для хранения координат внутри GraphApp
-  const nodesStore = useSharedValue({});
+  const nodesStore = useSharedValue<Record<string, NodeType>>({});
 
   // Загрузка workflow при монтировании
   useEffect(() => {

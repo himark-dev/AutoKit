@@ -7,16 +7,44 @@ import {
   Skia,
   DashPathEffect,
 } from '@shopify/react-native-skia';
-import { useDerivedValue } from 'react-native-reanimated';
+import { useDerivedValue, SharedValue } from 'react-native-reanimated';
 import { StyleSheet } from 'react-native';
-import {MINIMAP_SIZE, LINK_COLOR, LINK_WIDTH, MARGIN, ARROW_SIZE} from '@/src/components/graph/constants';
+import {MINIMAP_SIZE, LINK_COLOR, LINK_WIDTH, MARGIN } from '@/src/components/graph/constants';
+import { NodeData } from '@/src/components/nodes/Node';
+type NodeType = NodeData
 
-const getPortPosition = (node, port, type) => {
+interface RenderLinkProps {
+  fromId: string;
+  toId: string;
+  portFrom?: number;
+  portTo?: number;
+  additionalPort?: number;
+  store: any;
+}
+
+interface TempLineProps {
+  tempLine: SharedValue<{ x1: number; y1: number; x2: number; y2: number }>;
+  isConnecting: SharedValue<boolean>;
+}
+
+interface PortPositionProps {
+  node: NodeType;
+  port?: number;
+  type: string;
+}
+
+interface MinimapNodeProps {
+  id: string;
+  store: SharedValue<Record<string, NodeData>>;
+  OFF: number;
+}
+
+const getPortPosition = ({node, port, type} : PortPositionProps) => {
   'worklet';
   if (!node) return null;
   const p = type === 'additional'
-    ? node.additionalPorts?.[port]
-    : node.inputPorts?.[port];
+    ? node.additionalPorts?.[port!]
+    : node.inputPorts?.[port!];
 
   if (!p) return null;
   return {
@@ -25,31 +53,13 @@ const getPortPosition = (node, port, type) => {
   };
 };
 
-const addArrowHead = (path, fromX, fromY, toX, toY) => {
-  'worklet';
-  // const angle = Math.atan2(toY - fromY, toX - fromX);
-  const angle = Math.PI / 2;
-  const a1 = angle - Math.PI / 6;
-  const a2 = angle + Math.PI / 6;
-
-  const x1 = toX - ARROW_SIZE * Math.cos(a1);
-  const y1 = toY - ARROW_SIZE * Math.sin(a1);
-
-  const x2 = toX - ARROW_SIZE * Math.cos(a2);
-  const y2 = toY - ARROW_SIZE * Math.sin(a2);
-
-  path.moveTo(x1, y1);
-  path.lineTo(toX, toY);
-  path.lineTo(x2, y2);
-};
-
-export const RenderLink = memo(({ fromId, toId, portFrom, portTo, additionalPort, store }) => {
+export const RenderLink: React.FC<RenderLinkProps> = ({ fromId, toId, portFrom, portTo, additionalPort, store }) => {
   const path = useDerivedValue(() => {
     const from = store.value[fromId];
     const to = store.value[toId];
     if (!from || !to) return Skia.Path.Make();
 
-    const out = from.outputPorts?.[portFrom];
+    const out = from.outputPorts?.[portFrom!];
     if (!out) return Skia.Path.Make();
 
     const start = {
@@ -58,7 +68,7 @@ export const RenderLink = memo(({ fromId, toId, portFrom, portTo, additionalPort
     };
 
     const isAdditional = additionalPort === 1;
-    const end = getPortPosition(to, portTo, isAdditional ? 'additional' : 'input');
+    const end = getPortPosition({node: to, port: portTo, type: isAdditional ? 'additional' : 'input' });
     if (!end) return Skia.Path.Make();
 
     const p = Skia.Path.Make();
@@ -108,7 +118,6 @@ export const RenderLink = memo(({ fromId, toId, portFrom, portTo, additionalPort
       }
     }
 
-    // addArrowHead(p, start.x, start.y, end.x, end.y);
     return p;
   });
   return (
@@ -121,10 +130,10 @@ export const RenderLink = memo(({ fromId, toId, portFrom, portTo, additionalPort
       strokeJoin="round"
     />
   );
-});
+};
 
 // ================== TEMP LINK ==================
-export const RenderTempLine = ({ tempLine, isConnecting }) => {
+export const RenderTempLine: React.FC<TempLineProps> = ({ tempLine, isConnecting }) => {
   const path = useDerivedValue(() => {
     const { x1, y1, x2, y2 } = tempLine.value;
     const p = Skia.Path.Make();
@@ -150,7 +159,6 @@ export const RenderTempLine = ({ tempLine, isConnecting }) => {
       p.cubicTo(x1, y1 + offset, x2, y2 - offset, x2, y2);
     }
 
-    // addArrowHead(p, x1, y1, x2, y2);
     return p;
   });
 
@@ -170,7 +178,7 @@ export const RenderTempLine = ({ tempLine, isConnecting }) => {
   );
 };
 
-export const MinimapNode = ({ id, store, OFF }) => {
+export const MinimapNode: React.FC<MinimapNodeProps> = ({ id, store, OFF }) => {
   const nodeData = store.value[id];
   if (!nodeData) return null;
 
