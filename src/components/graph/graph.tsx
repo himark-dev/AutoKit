@@ -48,12 +48,15 @@ type NodeTypeBackend = NodeDataBackend
 type LinkTypeBackend = LinkDataBackend
 type NodesStore = Record<string, NodeType>;
 
+type NodesStoreValue = NodesStore & {
+  __order: string[];
+};
 type GraphAppProps = {
   nodes: NodeTypeBackend[];
   setNodes: React.Dispatch<React.SetStateAction<NodeTypeBackend[]>>;
   links: LinkTypeBackend[];
   setLinks: React.Dispatch<React.SetStateAction<LinkTypeBackend[]>>;
-  nodesStore: SharedValue<Record<string, NodeData>>;
+  nodesStore: SharedValue<NodesStoreValue>;
   onSave: () => void;
   onRun?: () => void;
   onDelete?: () => void;
