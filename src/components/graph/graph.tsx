@@ -356,6 +356,13 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     return res;
   });
 
+  const openNodeSettings = useCallback((nodeId: string, type: string, config: string) => {
+    router.push({
+      pathname: '/node-settings',
+      params: { nodeId, type, config },
+    });
+  }, []);
+
   // Update React state from UI thread but only when IDs actually change
   const updateVisibleNodeIds = useCallback((ids?: string[]) => {
     setVisibleNodeIds(prev => {
@@ -651,7 +658,36 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
       runOnJS(setActiveMenu)(found);
     });
 
-    return Gesture.Race(pan, tap);
+    const doubleTap = Gesture.Tap()
+      .numberOfTaps(2)
+      .maxDelay(250)
+      .onStart((e) => {
+        const adjX = (e.x - translateX.value) / scale.value;
+        const adjY = (e.y - translateY.value) / scale.value;
+
+        const store = nodesStore.value || {};
+        const vis = visibleNodeIdsSV.value || [];
+
+        for (let i = vis.length - 1; i >= 0; i--) {
+          const id = vis[i];
+          const n = store[id];
+          if (!n) continue;
+
+          if (
+            adjX >= n.x.value &&
+            adjX <= n.x.value + n.width &&
+            adjY >= n.y.value &&
+            adjY <= n.y.value + n.height
+          ) {
+            runOnJS(openNodeSettings)(id, n.desc, n.label);
+            break;
+          }
+        }
+      });
+
+      const tapGestures = Gesture.Exclusive(doubleTap, tap);
+
+    return Gesture.Race(pan, tapGestures);
   }, [nodesStore, screenWidth, screenHeight, visibleNodeIdsSV, linksSV, mergeGraphs, handleDisconnect]);
 
   const canvasGesture = useMemo(() => {
