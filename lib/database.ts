@@ -151,7 +151,7 @@ export const HistoryDB = {
 
       const runs: WorkflowRun[] = result.map((item: any) => ({
         id: item.id || '',
-        workflowId: item.workflowId || '',
+        workflowId: item.workflow || '', // исправлено: было workflowId, должно быть workflow
         start: item.start || Date.now(),
         end: item.end || 0,
         status: (item.status || 'RUNNING') as 'RUNNING' | 'SUCCESS' | 'ERROR',
@@ -236,7 +236,7 @@ export const HistoryDB = {
 
       const run: WorkflowRun = {
         id: result.id || id,
-        workflowId: result.workflowId || '',
+        workflowId: result.workflow || '', // исправлено: было workflowId, должно быть workflow
         start: result.start || Date.now(),
         end: result.end || 0,
         status: (result.status || 'RUNNING') as 'RUNNING' | 'SUCCESS' | 'ERROR',
