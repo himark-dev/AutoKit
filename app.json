@@ -7,6 +7,12 @@
       "expo-router",
       "expo-font"
     ],
-    "scheme": "autokit"
+    "scheme": "autokit",
+    "developmentClient": {
+      "silentLaunch": true
+    },
+    "experiments": {
+      "tsconfigPaths": true
+    }
   }
 }

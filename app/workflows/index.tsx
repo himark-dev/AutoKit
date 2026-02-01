@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Play, Clock, Pause, Plus, Trash2 } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { WorkflowDB, Workflow, HistoryDB } from "@/lib/database";
 
 // Шаблон для нового workflow
@@ -25,19 +25,32 @@ const WorkflowCard = ({ workflow, onDelete, onPlay }: WorkflowCardProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const { title, description, lastRun, nodeCount } = workflow.data;
   const router = useRouter();
+  const lastPressTime = useRef(0);
+  const playLastPressTime = useRef(0);
+  const deleteLastPressTime = useRef(0);
 
   const handleCardPress = () => {
-    // Навигация на страницу редактирования
+    const now = Date.now();
+    if (now - lastPressTime.current < 500) return;
+    lastPressTime.current = now;
     router.push(`/workflows/${workflow.id}`);
   };
 
   const handlePlayPress = async () => {
+    const now = Date.now();
+    if (now - playLastPressTime.current < 500) return;
+    playLastPressTime.current = now;
+    
     setIsRunning(true);
     await onPlay(workflow);
     setIsRunning(false);
   };
 
   const handleDelete = () => {
+    const now = Date.now();
+    if (now - deleteLastPressTime.current < 500) return;
+    deleteLastPressTime.current = now;
+    
     Alert.alert(
       "Delete Workflow",
       `Are you sure you want to delete "${title}"?`,
@@ -113,6 +126,22 @@ export default function Workflows() {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
+  const backLastPressTime = useRef(0);
+  const addLastPressTime = useRef(0);
+
+  const handleBackPress = () => {
+    const now = Date.now();
+    if (now - backLastPressTime.current < 500) return;
+    backLastPressTime.current = now;
+    router.back();
+  };
+
+  const handleAddPress = async () => {
+    const now = Date.now();
+    if (now - addLastPressTime.current < 500) return;
+    addLastPressTime.current = now;
+    await addWorkflow();
+  };
 
   // Загрузка workflows из БД
   const loadWorkflows = async () => {
@@ -131,8 +160,16 @@ export default function Workflows() {
   // ФУНКЦИЯ ДОБАВЛЕНИЯ НОВОГО WORKFLOW
   const addWorkflow = async () => {
     try {
+      // Генерируем уникальное имя через DatabaseModule
+      const uniqueName = await new Promise((resolve, reject) => {
+        const { DatabaseModule } = require('react-native').NativeModules;
+        DatabaseModule.generateUniqueWorkflowName('New Workflow')
+          .then((name: string) => resolve(name))
+          .catch((error: any) => reject(error));
+      });
+      
       const newWorkflowData = { ...DEFAULT_WORKFLOW_TEMPLATE };
-      newWorkflowData.title = `New Workflow ${workflows.length + 1}`;
+      newWorkflowData.title = uniqueName as string;
       
       const id = await WorkflowDB.add(newWorkflowData);
       
@@ -233,7 +270,7 @@ export default function Workflows() {
       <View className="flex-1 bg-google-bg px-6">
         <View className="flex-row items-center justify-between mb-6 mt-4">
           <View className="flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="mr-4">
+            <TouchableOpacity onPress={handleBackPress} className="mr-4">
               <ArrowLeft color="white" size={24} />
             </TouchableOpacity>
             <Text className="text-white font-google text-xl">Workflows</Text>
@@ -241,7 +278,7 @@ export default function Workflows() {
           
           <TouchableOpacity 
             className="w-10 h-10 bg-green-500/20 rounded-xl items-center justify-center"
-            onPress={addWorkflow}
+            onPress={handleAddPress}
           >
             <Plus color="#22c55e" size={20} />
           </TouchableOpacity>
@@ -267,7 +304,7 @@ export default function Workflows() {
                 <Text className="text-gray-400 font-google text-base mb-4">No workflows found</Text>
                 <TouchableOpacity 
                   className="bg-blue-500/20 px-6 py-3 rounded-xl"
-                  onPress={addWorkflow}
+                  onPress={handleAddPress}
                 >
                   <Text className="text-blue-400 font-google text-base">Create First Workflow</Text>
                 </TouchableOpacity>
