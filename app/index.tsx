@@ -17,6 +17,7 @@ import {
   LayoutGrid,
   History,
 } from "lucide-react-native";
+import { useDatabaseCounts } from "@/lib/useDatabaseCounts";
 
 const { DatabaseModule } = NativeModules;
 
@@ -69,6 +70,7 @@ const MenuCard = ({
 export default function App() {
   const router = useRouter();
   const settingsLastPressTime = useRef(0);
+  const { workflowCount, historyCount } = useDatabaseCounts();
 
   const handleSettingsPress = () => {
     const now = Date.now();
@@ -109,7 +111,7 @@ export default function App() {
         <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
           <MenuCard
             title="Workflows"
-            count={DatabaseModule.getWorkflowCount()}
+            count={workflowCount}
             icon={Workflow}
             iconBg="bg-red-400/80"
             href="/workflows"
@@ -123,7 +125,7 @@ export default function App() {
           />
           <MenuCard
             title="History"
-            count={DatabaseModule.getRunCount()}
+            count={historyCount}
             icon={History}
             iconBg="bg-blue-500/80"
             href="/history"

@@ -1,6 +1,7 @@
 package tech.autokit.database
 
 import com.facebook.react.bridge.*
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import kotlinx.coroutines.*
 import java.util.Date
 import java.util.UUID
@@ -13,6 +14,7 @@ class Module(
     private val runDao = db.runDao()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val countJobs = mutableMapOf<String, Job>()
 
     override fun getName(): String = "DatabaseModule"
 
@@ -226,8 +228,52 @@ class Module(
         }
     }
 
+    @ReactMethod
+    fun subscribeToWorkflowCount(promise: Promise) {
+        try {
+            countJobs["workflow"]?.cancel()
+            countJobs["workflow"] = scope.launch {
+                workflowDao.getCountFlow().collect { count ->
+                    val params = Arguments.createMap().apply {
+                        putString("type", "workflowCount")
+                        putInt("count", count)
+                    }
+                    reactApplicationContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                        .emit("DatabaseCountUpdate", params)
+                }
+            }
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERR_SUBSCRIBE_WF_COUNT", e)
+        }
+    }
+
+    @ReactMethod
+    fun subscribeToRunCount(promise: Promise) {
+        try {
+            countJobs["run"]?.cancel()
+            countJobs["run"] = scope.launch {
+                runDao.getCountFlow().collect { count ->
+                    val params = Arguments.createMap().apply {
+                        putString("type", "runCount")
+                        putInt("count", count)
+                    }
+                    reactApplicationContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                        .emit("DatabaseCountUpdate", params)
+                }
+            }
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERR_SUBSCRIBE_RUN_COUNT", e)
+        }
+    }
+
     override fun onCatalystInstanceDestroy() {
         super.onCatalystInstanceDestroy()
+        countJobs.values.forEach { it.cancel() }
+        countJobs.clear()
         scope.cancel()
     }
 }

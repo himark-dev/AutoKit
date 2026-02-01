@@ -62,6 +62,9 @@ interface WorkflowDao {
     @Query("SELECT COUNT(*) FROM workflows")
     suspend fun getCount(): Int
 
+    @Query("SELECT COUNT(*) FROM workflows")
+    fun getCountFlow(): kotlinx.coroutines.flow.Flow<Int>
+
     @Delete
     suspend fun delete(workflow: Workflow)
 
@@ -76,6 +79,9 @@ interface RunDao {
 
     @Query("SELECT COUNT(*) FROM runs")
     suspend fun getCount(): Int
+
+    @Query("SELECT COUNT(*) FROM runs")
+    fun getCountFlow(): kotlinx.coroutines.flow.Flow<Int>
 
     @Query("SELECT * FROM runs WHERE id = :id")
     suspend fun getById(id: String): Run?
