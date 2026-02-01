@@ -331,7 +331,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
   const visibleNodeIdsSV = useDerivedValue(() => {
     'worklet';
     const val = nodesStore.value || {};
-    const order: string[] = val.__order || [];
+    const order: string[] = val?.__order ?? [];
     const s = scale.value || 1;
     const tx = translateX.value;
     const ty = translateY.value;
@@ -398,7 +398,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
           if (!n) continue;
           if (adjX >= n.x.value && adjX <= n.x.value + n.width && adjY >= n.y.value && adjY <= n.y.value + n.height) {
             hitId = id;
-            if (store[id]) store[id].isActive = 1;
+            if (store[id]) store[id].isActive = true;
             break;
           }
         }
@@ -640,7 +640,7 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
         const id = vis[i];
         const n = store[id];
         if (adjX >= n.x.value && adjX <= n.x.value + n.width && adjY >= n.y.value && adjY <= n.y.value + n.height) {
-          store[n.nodeId].isActive = 1;
+          store[n.nodeId].isActive = true;
           found = { nodeId: n.nodeId, x: n.x.value * scale.value + translateX.value, y: n.y.value * scale.value + translateY.value, width: n.width * scale.value, height: n.height * scale.value, scale: scale.value };
           break;
         }
@@ -760,6 +760,8 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
     return visibleLinkIds.map(id => linkMap.get(id)!).filter(Boolean);
   }, [visibleLinkIds, links]);
 
+  const minimapContentTransform = [{ scale: MINIMAP_RATIO }, { translateX: WORLD_SIZE / 2 }, { translateY: WORLD_SIZE / 2 }];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -808,6 +810,16 @@ export default function GraphApp({ nodes, setNodes, links, setLinks, nodesStore,
             </Canvas>
           </GestureDetector>
 
+          <GestureDetector gesture={minimapGesture}>
+            <View style={styles.minimapContainer}>
+              <Canvas style={{ width: MINIMAP_SIZE, height: MINIMAP_SIZE }}>
+                <Group transform={minimapContentTransform}>
+                  {nodes.map(n => <MinimapNode key={n.id} id={n.id} store={nodesStore} OFF={OFF} />)}
+                </Group>
+                <SkiaRect x={vX} y={vY} width={vW} height={vH} color="green" style="stroke" strokeWidth={2} />
+              </Canvas>
+            </View>
+          </GestureDetector>
 
           {activeMenu && (<NodeMenuOverlay visible x={activeMenu.x} y={activeMenu.y} width={activeMenu.width} scale={activeMenu.scale} onAction={handleMenuAction} />)}
         </View>

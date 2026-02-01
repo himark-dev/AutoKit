@@ -53,6 +53,7 @@ export interface NodeData {
   inputPorts: { x: number; y: number }[];
   outputPorts: { x: number; y: number }[];
   additionalPorts: {x: number; y: number}[];
+  isActive: boolean;
 }
 
 export const createNode = (data: any): NodeData => {
