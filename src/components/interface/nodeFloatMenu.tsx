@@ -13,6 +13,15 @@ const MENU_ICONS = [
   { name: 'trash-can-outline', action: 'delete' },
 ];
 
+export interface MenuOverlayProps {
+  visible: boolean;
+  x: number;
+  y: number;
+  width: number;
+  scale: number;
+  onAction: any;
+}
+
 export const NodeMenuOverlay: React.FC<MenuOverlayProps> = ({ visible, x, y, width, scale, onAction }) => {
   
   const animatedStyle = useAnimatedStyle(() => {

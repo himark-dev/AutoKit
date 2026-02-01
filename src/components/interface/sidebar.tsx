@@ -15,13 +15,24 @@ const CATEGORIES = [
   { title: 'AI', data: ['AI Agent', 'OpenAI', 'Document Loader'] },
 ];
 
-const SidebarItem = ({ label, onPress }) => (
+interface SidebarItemProps {
+  label: string;
+  onPress: (label: string) => void;
+}
+
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+  onAddNode: (type: string) => void;
+}
+
+const SidebarItem: React.FC<SidebarItemProps> = ({ label, onPress }) => (
   <TouchableOpacity onPress={() => onPress(label)} style={{ padding: 10, borderRadius: 8 }}>
     <Text style={{ color: '#fff' }}>{label}</Text>
   </TouchableOpacity>
 );
 
-export function Sidebar({ open, onClose, onAddNode }) {
+export const Sidebar: React.FC<SidebarProps> = ({open, onClose, onAddNode}) => {
   const [query, setQuery] = useState('');
 
   // filter sections by query (simple contains)
