@@ -1,6 +1,6 @@
 import "@/global.css";
 
-import { ElementType } from "react";
+import { ElementType, useRef } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -36,11 +36,19 @@ const MenuCard = ({
   href,
 }: MenuCardProps) => {
   const router = useRouter();
+  const lastPressTime = useRef(0);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (now - lastPressTime.current < 500) return;
+    lastPressTime.current = now;
+    href && router.push(href);
+  };
 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => href && router.push(href)}
+      onPress={handlePress}
       className="bg-google-card mb-3 p-6 rounded-[28px] flex-row justify-between items-center"
     >
       <View>
@@ -60,6 +68,14 @@ const MenuCard = ({
 
 export default function App() {
   const router = useRouter();
+  const settingsLastPressTime = useRef(0);
+
+  const handleSettingsPress = () => {
+    const now = Date.now();
+    if (now - settingsLastPressTime.current < 500) return;
+    settingsLastPressTime.current = now;
+    router.push("/settings");
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
@@ -72,7 +88,7 @@ export default function App() {
           </View>
           <TouchableOpacity
             className="p-2"
-            onPress={() => router.push("/settings")}
+            onPress={handleSettingsPress}
           >
             <Settings color="white" size={24} />
           </TouchableOpacity>
