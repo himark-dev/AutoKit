@@ -146,8 +146,16 @@ export default function Workflows() {
   // ФУНКЦИЯ ДОБАВЛЕНИЯ НОВОГО WORKFLOW
   const addWorkflow = async () => {
     try {
+      // Генерируем уникальное имя через DatabaseModule
+      const uniqueName = await new Promise((resolve, reject) => {
+        const { DatabaseModule } = require('react-native').NativeModules;
+        DatabaseModule.generateUniqueWorkflowName('New Workflow')
+          .then((name: string) => resolve(name))
+          .catch((error: any) => reject(error));
+      });
+      
       const newWorkflowData = { ...DEFAULT_WORKFLOW_TEMPLATE };
-      newWorkflowData.title = `New Workflow ${workflows.length + 1}`;
+      newWorkflowData.title = uniqueName as string;
       
       const id = await WorkflowDB.add(newWorkflowData);
       

@@ -108,6 +108,26 @@ class Module(
     }
 
     @ReactMethod
+    fun generateUniqueWorkflowName(baseName: String, promise: Promise) {
+        scope.launch {
+            try {
+                val existingNames = workflowDao.getAllNames()
+                var counter = 1
+                var uniqueName = baseName
+                
+                while (existingNames.contains(uniqueName)) {
+                    uniqueName = "$baseName $counter"
+                    counter++
+                }
+                
+                promise.resolve(uniqueName)
+            } catch (e: Exception) {
+                promise.reject("ERR_GENERATE_NAME", e)
+            }
+        }
+    }
+
+    @ReactMethod
     fun upsertRun(
         id: String,
         workflow: String,

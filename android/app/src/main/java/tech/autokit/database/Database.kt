@@ -53,6 +53,9 @@ interface WorkflowDao {
     @Query("SELECT * FROM workflows")
     suspend fun getAll(): List<Workflow>
 
+    @Query("SELECT name FROM workflows")
+    suspend fun getAllNames(): List<String>
+
     @Query("SELECT * FROM workflows WHERE status = 'ENABLED'")
     suspend fun getActive(): List<Workflow>
 
