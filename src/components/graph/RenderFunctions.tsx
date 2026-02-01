@@ -33,9 +33,14 @@ interface PortPositionProps {
   type: string;
 }
 
+type NodesStore = Record<string, NodeType>;
+type NodesStoreValue = NodesStore & {
+  __order: string[];
+};
+
 interface MinimapNodeProps {
   id: string;
-  store: SharedValue<Record<string, NodeData>>;
+  store: SharedValue<NodesStoreValue>;
   OFF: number;
 }
 
