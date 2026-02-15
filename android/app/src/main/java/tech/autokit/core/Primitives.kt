@@ -27,16 +27,11 @@ class Node(
         val config: String
     )
 
-    fun execute(ctx: Context, state: JSON): JSON {
-        val binder = IPC.bind(ctx, pkg)
-        val result = binder?.execute(type, config.toJsonString(), state.toJsonString())
-        val parser = Parser.default()
-        val json = parser.parse(StringBuilder(result)) as JSON
+    fun execute(ctx: Context): JSON {
+        val plugin = IPC.bind(ctx, pkg)
+        val result = plugin?.execute(type, config.toJsonString())
+        val json = JSON(result ?: "{}")
         return json
-    }
-
-    fun trigger(ctx: Context, intent: Intent): JSON? {
-        return JSON()
     }
 }
 

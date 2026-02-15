@@ -36,13 +36,14 @@ object IPC {
         return service
     }
 
-    fun connect(ctx: Context, pkg: String, action: (IBinder) -> Unit) {
+    fun connect(ctx: Context, pkg: String, action: (IPlugin) -> Unit) {
         val intent = Intent("tech.autokit.intent.action.EXTENSION").setPackage(pkg)
         
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
                 try {
-                    action(binder)
+                    val plugin = IPlugin.Stub.asInterface(binder)
+                    action(plugin)
                 } catch (e: Exception) {
                     Log.e("AutoKit", "Error during temporary connection to $pkg", e)
                 } finally {

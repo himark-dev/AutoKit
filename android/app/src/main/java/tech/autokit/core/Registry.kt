@@ -20,9 +20,8 @@ object Registry {
 
         for (info in services) {
             val pkg = info.serviceInfo.packageName
-            IPC.connect(ctx, pkg) { binder ->
+            IPC.connect(ctx, pkg) { plugin ->
                 try {
-                    val plugin = IPlugin.Stub.asInterface(binder)
                     val library = plugin.discover()
 
                     if (library != null && library is Map<*, *>) {
