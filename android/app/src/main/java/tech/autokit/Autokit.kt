@@ -8,7 +8,10 @@ import com.facebook.react.uimanager.ViewManager
 class Package : ReactPackage {
     // Регистрация нативных модулей (логика)
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(tech.autokit.database.Module(reactContext))
+        return listOf(
+            tech.autokit.database.Module(reactContext),
+            tech.autokit.core.Registry.Module(reactContext)
+        )
     }
 
     // Регистрация нативных View (если бы мы создавали свои кнопки/графики)
