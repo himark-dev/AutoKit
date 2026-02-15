@@ -11,16 +11,15 @@ import androidx.core.content.ContextCompat
 
 import kotlinx.coroutines.*
 
-import com.beust.klaxon.Parser
-import com.beust.klaxon.JsonObject
-
 import tech.autokit.database.Storage
+import tech.autokit.core.Engine
 
 class Service : android.app.Service() {
     private val database by lazy { Storage.getDatabase(this) }
     private val receiver = Receiver()
-
+    
     private var scope = CoroutineScope(Dispatchers.Main + Job())
+    private val engine = Engine(this)
 
     data class Subscription(val workflow: String, val trigger: String)
     private var subscriptions = mutableMapOf<String, Subscription>()
@@ -39,14 +38,10 @@ class Service : android.app.Service() {
         
         scope.launch {
             withContext(Dispatchers.IO) {
-                val workflowEntity = database.workflowDao().getById(sub.workflow)
-                val workflow = Workflow.fromString(workflowEntity!!.json)
-                val state = JSON()
+                val entity = database.workflowDao().getById(sub.workflow) ?: return@withContext
+                val workflow = Workflow.fromString(entity.json)
 
-                for (node in workflow.bfs(sub.trigger)) {
-                    val result = node.execute(this@Service, state)
-                    state[node.id] = result
-                }
+                engine.run(workflow, sub.trigger)
             }
         }
 
