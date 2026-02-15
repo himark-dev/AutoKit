@@ -3,6 +3,8 @@ package tech.autokit.core
 import android.content.Context
 import android.content.Intent
 
+import com.facebook.react.bridge.*
+
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
 
@@ -110,6 +112,19 @@ class Workflow(val json: JSON) {
     companion object {
         fun fromString(json: String): Workflow {
             return Workflow(JSON(json))
+        }
+    }
+
+    class Module(private val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+        override fun getName(): String = "Workflow"
+
+        @ReactMethod
+        fun triggerManual(workflow: ID) {
+            val intent = Intent("tech.autokit.intent.action.MANUAL").apply {
+                putExtra("workflow", workflow)
+                setPackage(reactContext.packageName)
+            }
+            reactContext.sendBroadcast(intent)
         }
     }
 }

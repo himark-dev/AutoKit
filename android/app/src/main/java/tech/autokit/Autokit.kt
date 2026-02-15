@@ -10,7 +10,8 @@ class Package : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         return listOf(
             tech.autokit.database.Module(reactContext),
-            tech.autokit.core.Registry.Module(reactContext)
+            tech.autokit.core.Registry.Module(reactContext),
+            tech.autokit.core.Workflow.Module(reactContext),
         )
     }
 
