@@ -5,9 +5,9 @@ import android.content.Context
 import tech.autokit.builtin.Node
 import tech.autokit.core.JSON
 
-@Node.Definition(icon = "terminal", ports = 1337)
-class Manual(config: JSON): Node(config) {
-    override fun execute(ctx: Context, state: JSON): JSON {
+@Node.Definition(icon = "play", ports = Node.Ports(input = 0, output = 1))
+class Manual(val action: String): Node {
+    override fun execute(ctx: Context): JSON? {
         return JSON()
     }
 }

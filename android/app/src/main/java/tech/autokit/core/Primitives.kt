@@ -3,29 +3,37 @@ package tech.autokit.core
 import android.content.Context
 import android.content.Intent
 
-import com.beust.klaxon.Parser
 import com.beust.klaxon.JsonObject
-import com.beust.klaxon.JsonObject as KlaxonFactory
+import com.beust.klaxon.Parser
 
 import tech.autokit.core.IPC
 
 typealias JSON = JsonObject
-fun JSON(map: Map<String, Any?> = emptyMap()): JSON = KlaxonFactory(map)
+fun JSON(json: String = "{}"): JSON {
+    return Parser.default().parse(StringBuilder(json)) as JSON
+}
+
+typealias ID = String
 
 class Node(
-    val id: String,
     val type: String,
     val pkg: String,
     val config: JSON
 ) {
-    data class Definition (
+    data class Definition(
         val type: String,
         val pkg: String,
         val name: String,
         val icon: String,
-        val ports: Int,
-        val config: String
-    )
+        val ports: Ports,
+        val schema: String
+    ) {
+        data class Ports(
+            val input: Int = 0,
+            val special: Int = 0,
+            val output: Int = 0
+        )
+    }
 
     fun execute(ctx: Context): JSON {
         val plugin = IPC.bind(ctx, pkg)
