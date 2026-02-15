@@ -50,9 +50,11 @@ class Workflow(val json: JSON) {
     private val triggers = json.obj("triggers") ?: JSON()
     private val nodes = json.obj("nodes") ?: JSON()
 
-    fun find(id: String): JSON? = (triggers[id] ?: nodes[id]) as? JSON
+    fun find(id: ID): JSON? = (triggers[id] ?: nodes[id]) as? JSON
 
-    fun getNextIds(id: String): List<String> {
+    operator fun get(id: ID): JSON? = (triggers[id] ?: nodes[id]) as? JSON
+
+    fun getNextIds(id: ID): List<String> {
         val next = find(id)?.get("next")
         return when (next) {
             is List<*> -> next.filterIsInstance<String>()
@@ -61,22 +63,24 @@ class Workflow(val json: JSON) {
         }
     }
 
-    fun bfs(startId: String): Iterable<Node> = Iterable {
-        Iterator(startId)
+    fun bfs(entry: ID): Iterable<ID> = Iterable {
+        Iterator(entry)
     }
 
-    private inner class Iterator(startId: String) : kotlin.collections.Iterator<Node> {
-        private val queue: java.util.Queue<String> = java.util.LinkedList()
+    private inner class Iterator(entry: ID) : kotlin.collections.Iterator<ID> {
+        private val queue: java.util.Queue<ID> = java.util.LinkedList()
 
         init {
-            if (find(startId) != null) {
-                queue.add(startId)
+            if (find(entry) != null) {
+                queue.add(entry)
+            } else {
+                android.util.Log.d("AutoKit", "Trigger not found")
             }
         }
 
         override fun hasNext(): Boolean = queue.isNotEmpty()
 
-        override fun next(): Node {
+        override fun next(): ID {
             val id = queue.poll() ?: throw NoSuchElementException()
             val data = find(id) ?: throw IllegalStateException("Node $id missing")
 
@@ -84,27 +88,28 @@ class Workflow(val json: JSON) {
                 queue.add(next)
             }
 
-            return Registry.create(id, data.string("type")!!, data.obj("config")!!)
+            return id
         }
     }
 
-    fun extractSubscriptions(): Map<String, String> {
-        val result = mutableMapOf<String, String>()
-        triggers.forEach { (id, value) ->
-            val triggerData = value as? JsonObject
-            val action = triggerData?.obj("config")?.string("action")
-            if (action != null) {
-                result[action] = id
+    fun extractSubscriptions(): Map<String, ID> {
+        val result = mutableMapOf<String, ID>()
+
+        triggers.forEach { (key, value) ->
+            val trigger = triggers.obj(key)
+            val action = trigger?.obj("config")?.string("action")
+
+            if (!action.isNullOrEmpty()) {
+                result[action] = key
             }
         }
+
         return result
     }
 
     companion object {
-        fun fromString(jsonString: String): Workflow {
-            val parser = Parser.default()
-            val json = parser.parse(StringBuilder(jsonString)) as JSON
-            return Workflow(json)
+        fun fromString(json: String): Workflow {
+            return Workflow(JSON(json))
         }
     }
 }
