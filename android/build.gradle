@@ -19,6 +19,18 @@ allprojects {
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
   }
+  
+  afterEvaluate { project ->
+    if (project.name.startsWith('expo-') && project.hasProperty('android')) {
+      project.android {
+        variantFilter { variant ->
+          if (variant.buildType.name == 'debugAndroidTest') {
+            variant.setIgnore(true)
+          }
+        }
+      }
+    }
+  }
 }
 
 apply plugin: "expo-root-project"
