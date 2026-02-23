@@ -1,9 +1,9 @@
 // app/workflows/index.tsx
 import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { ArrowLeft, Play, Clock, Pause, Plus, Trash2 } from "lucide-react-native";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { WorkflowDB, Workflow, HistoryDB } from "@/lib/database";
 
 // Шаблон для нового workflow
@@ -264,6 +264,12 @@ export default function Workflows() {
   useEffect(() => {
     loadWorkflows();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadWorkflows();
+    }, [])
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#131314" }}>
